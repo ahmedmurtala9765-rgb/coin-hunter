@@ -1,0 +1,61 @@
+import type { User, InsertUser, Wallet, InsertWallet, Signal, Trade, InsertTrade, UserLane, InsertUserLane, GroupBinding, InsertGroupBinding, InsertUserSubscription, UserSubscription } from "../shared/schema";
+export interface IStorage {
+    getUser(id: string): Promise<User | undefined>;
+    upsertUser(user: InsertUser): Promise<User>;
+    updateUser(id: string, data: Partial<User>): Promise<User>;
+    getUserLanes(userId: string): Promise<UserLane[]>;
+    upsertUserLane(lane: InsertUserLane): Promise<UserLane>;
+    getGroupBinding(groupId: string, topicId?: string): Promise<GroupBinding | undefined>;
+    getGroupBindings(groupId: string): Promise<GroupBinding[]>;
+    upsertGroupBinding(binding: InsertGroupBinding): Promise<GroupBinding>;
+    getUserSubscriptions(userId: string): Promise<UserSubscription[]>;
+    upsertUserSubscription(sub: InsertUserSubscription): Promise<UserSubscription>;
+    deleteUserSubscription(userId: string, groupId: string, topicId?: string, lane?: string): Promise<void>;
+    getSubscribersForBinding(groupId: string, topicId: string | undefined, lane: string): Promise<User[]>;
+    getWallets(userId: string): Promise<Wallet[]>;
+    getWallet(id: number): Promise<Wallet | undefined>;
+    updateWalletBalance(id: number, balance: string): Promise<Wallet>;
+    createWallet(wallet: InsertWallet): Promise<Wallet>;
+    deleteWallet(id: number): Promise<void>;
+    setActiveWallet(userId: string, walletId: number): Promise<void>;
+    getActiveWallet(userId: string): Promise<Wallet | undefined>;
+    getSignals(): Promise<Signal[]>;
+    getSignal(id: number): Promise<Signal | undefined>;
+    createSignal(signal: any): Promise<Signal>;
+    updateSignal(id: number, data: Partial<Signal>): Promise<void>;
+    getTrades(userId: string): Promise<Trade[]>;
+    createTrade(insertTrade: InsertTrade): Promise<Trade>;
+    updateTrade(id: number, data: Partial<Trade>): Promise<Trade>;
+}
+export declare class DatabaseStorage implements IStorage {
+    getUser(id: string): Promise<User | undefined>;
+    upsertUser(insertUser: any): Promise<User>;
+    updateUser(id: string, data: Partial<User>): Promise<User>;
+    getCommandCountToday(userId: string): Promise<number>;
+    recordCommandUse(userId: string): Promise<number>;
+    getUserLanes(userId: string): Promise<UserLane[]>;
+    upsertUserLane(insertLane: InsertUserLane): Promise<UserLane>;
+    getGroupBinding(groupId: string, topicId?: string): Promise<GroupBinding | undefined>;
+    getGroupBindings(groupId: string): Promise<GroupBinding[]>;
+    getUserSubscriptions(userId: string): Promise<UserSubscription[]>;
+    upsertUserSubscription(sub: InsertUserSubscription): Promise<UserSubscription>;
+    deleteUserSubscription(userId: string, groupId: string, topicId?: string, lane?: string): Promise<void>;
+    getSubscribersForBinding(groupId: string, topicId: string | undefined, lane: string): Promise<User[]>;
+    upsertGroupBinding(insertBinding: InsertGroupBinding): Promise<GroupBinding>;
+    getWallets(userId: string): Promise<Wallet[]>;
+    setActiveWallet(userId: string, walletId: number): Promise<void>;
+    getActiveWallet(userId: string): Promise<Wallet | undefined>;
+    getWallet(id: number): Promise<Wallet | undefined>;
+    updateWalletBalance(id: number, balance: string): Promise<Wallet>;
+    createWallet(insertWallet: InsertWallet): Promise<Wallet>;
+    deleteWallet(id: number): Promise<void>;
+    getSignals(): Promise<Signal[]>;
+    getSignal(id: number): Promise<Signal | undefined>;
+    createSignal(insertSignal: any): Promise<Signal>;
+    updateSignal(id: number, data: Partial<Signal>): Promise<void>;
+    getTrades(userId: string): Promise<Trade[]>;
+    createTrade(insertTrade: InsertTrade): Promise<Trade>;
+    updateTrade(id: number, data: Partial<Trade>): Promise<Trade>;
+}
+export declare const storage: DatabaseStorage;
+//# sourceMappingURL=storage.d.ts.map
