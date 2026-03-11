@@ -1037,8 +1037,8 @@ const extensiveResearch = await workerModule.fetchInternetContext(symbol).catch(
           }
           bot.sendMessage(chatId, response, { parse_mode: 'HTML', message_thread_id: msg.message_thread_id });
         } catch (dbErr: any) {
-          log(`Bind error: ${dbErr.message}`, "telegram");
-          bot.sendMessage(chatId, "❌ <b>Database error during binding.</b> Please ensure the bot is admin.", { parse_mode: 'HTML' });
+          log(`Bind error: ${dbErr?.message || dbErr}`, "telegram");
+          bot.sendMessage(chatId, `❌ <b>Database error during binding.</b> Please ensure the bot has permission to write and that the database is accessible.\n\nError: <code>${(dbErr?.message || dbErr).toString().slice(0, 200)}</code>`, { parse_mode: 'HTML' });
         }
         return;
       }

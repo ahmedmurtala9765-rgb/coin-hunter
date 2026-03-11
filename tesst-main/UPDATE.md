@@ -22,16 +22,19 @@
 ### 3) No Raw JSON in User Output
 - Model responses that are pure JSON are parsed and converted into a readable human summary.
 - Any embedded JSON suffix is stripped so users no longer see raw `{ "bias": ... }` blocks.
+### 4) Image/Video Pair Detection & Validation (Robust)
+- Pair detection now validates via:
+  1. Crypto price check
+  2. Forex price check
+  3. Meme-coin web search
+  4. Otherwise, falls back to chart-based analysis (crypto default)
+- Users receive clear messaging explaining which path was taken.
 
-### 4) Image/Video Pair Detection & Validation Flow (Improved)
-When users send a chart image/video, the bot now: 
-1. Tries to detect the pair via AI OCR.
-2. Validates the pair via **crypto pricing**.
-3. If not crypto, validates via **forex pricing**.
-4. If still not validated, checks **meme coin likelihood** by searching “<pair> meme coin”.
-5. If validation fails, it falls back to **chart-based analysis with default crypto assumptions**.
-
-Users receive clear messages about which path was taken.
+### 5) Signal Lifecycle Improvements (3-Day Timeout, Max 3 Open)
+- Signals now automatically **close after 3 days** if TP/SL is not hit (timeout notification is sent).
+- New signals can be created once the existing signal is closed (or 3 days have passed).
+- A hard limit of **3 open signals (across all markets)** is enforced to avoid overexposure.
+- Only **one new signal per 3-day period** is allowed regardless of market type.
 
 ### 5) Fixes / Stability Enhancements
 - Fixed a runtime crash caused by a typo (`macdHist` -> `macdHistogram`).

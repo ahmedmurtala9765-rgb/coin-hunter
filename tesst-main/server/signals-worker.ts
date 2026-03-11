@@ -793,6 +793,8 @@ const ALL_FOREX_PAIRS = [
 ];
 
 export async function runScanner(marketType: "crypto" | "forex", isForce: boolean = false, forceChatId?: string, forceTopicId?: string, forcePair?: string, mode?: "setup" | "analyze", imageUrl?: string): Promise<boolean> {
+  let sentDirectMessage = false;
+  let lastBias: "bullish" | "bearish" | "neutral" = "neutral";
   try {
     // normalize forcePair if provided
     if (forcePair) {
@@ -810,19 +812,19 @@ export async function runScanner(marketType: "crypto" | "forex", isForce: boolea
       log(`Active signal exists for ${marketType}: ${activeForType.symbol}. will replace if a new one is generated.`, "scanner");
     }
 
-    // Enforce 1 signal per day and max 3 open positions only for background scans
+    // Enforce a max of 3 open positions (total) and 1 new signal per 3-day period (background scans only)
     if (!(mode === "analyze" || mode === "setup")) {
-      const activeSignals = signals.filter(s => s.status === "active" && s.type === marketType);
+      const activeSignals = signals.filter(s => s.status === "active");
       if (activeSignals.length >= 3) {
-        log(`Maximum 3 open signals reached for ${marketType}, skipping new signal generation.`, "scanner");
+        log(`Maximum 3 open signals reached (total), skipping new signal generation.`, "scanner");
         return false;
       }
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const signalsToday = signals.filter(s => s.type === marketType && new Date(s.createdAt) >= today);
-      log(`[scanner] Signals found today for ${marketType}: ${signalsToday.length}`, "scanner");
-      if (signalsToday.length >= 1) {
-        log(`1 signal per day limit reached for ${marketType}, skipping new signal generation.`, "scanner");
+
+      const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+      const recentSignals = signals.filter(s => new Date(s.createdAt) >= threeDaysAgo);
+      log(`[scanner] Signals created in last 3 days: ${recentSignals.length}`, "scanner");
+      if (recentSignals.length >= 1) {
+        log(`3-day signal limit reached, skipping new signal generation.`, "scanner");
         return false;
       }
     }
@@ -1027,6 +1029,7 @@ Mode: ${mode || "scan"}`;
         const analysis = rawAnalysis;
         let bias: "bullish" | "bearish" | "neutral" = (ai.bias || "neutral").toLowerCase() as any;
         if (!["bullish", "bearish", "neutral"].includes(bias)) bias = "neutral";
+        lastBias = bias;
 
         const entryPrice = ai.entry ? Number(ai.entry) : null;
         const tp1 = ai.tp ? Number(ai.tp) : null;
@@ -1047,6 +1050,9 @@ Mode: ${mode || "scan"}`;
               // Fallback to plain text
               bot.sendMessage(forceChatId, analysis.slice(0, 4096), { message_thread_id: forceTopicId ? parseInt(forceTopicId) : undefined }).catch(() => {});
             });
+
+            // Mark that we delivered a message for this manual request
+            sentDirectMessage = true;
           }
         }
 
@@ -1182,7 +1188,9 @@ Mode: ${mode || "scan"}`;
       } catch (e) {}
     }
   } catch (err) { log("Scanner error: " + err); }
-  return false;
+  // Return true if we delivered a direct analysis response or if a signal was created.
+  // This prevents manual commands (/analyze, /setup) from incorrectly reporting failure when only neutral bias is found.
+  return sentDirectMessage || lastBias !== "neutral";
 }
 
 async function formatAnalysisMessage(symbol: string, marketType: string, ai: any, rawAnalysis: string, mode: string = 'analyze', indicators: any = {}): Promise<string> {
@@ -1593,10 +1601,12 @@ export async function runMonitoringLoop() {
 
             const isTp = finalStatusUpdate.includes("TP HIT") || finalStatusUpdate.includes("TARGET");
             const isSl = finalStatusUpdate.includes("SL HIT") || finalStatusUpdate.includes("INVALIDATION");
-            const isFinalStatus = isTp || isSl;
+            const isTimeoutStatus = finalStatusUpdate.includes("TIMEOUT");
+            const isFinalStatus = isTp || isSl || isTimeoutStatus;
 
             const instStatus = isTp ? "🎯 TARGET LIQUIDITY MITIGATED (TP HIT)" : 
                               isSl ? "🛑 STRUCTURAL INVALIDATION TRIGGERED (SL HIT)" :
+                              isTimeoutStatus ? "⏳ TIMEOUT (3-day limit) - CLOSE POSITION" :
                               statusUpdate || `INSTITUTIONAL UPDATE ⏱ Price: ${currentPrice.toFixed(signal.type === 'forex' ? 5 : 2)}`;
 
             const model = "anthropic/claude-3.5-haiku";
